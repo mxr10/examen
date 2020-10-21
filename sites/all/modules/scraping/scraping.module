@@ -1,0 +1,144 @@
+<?php
+
+function scraping_modules_enabled($modules) {
+	//despues de instalar el modulo ejecuto la funcion para insertar datos
+  if (in_array('scraping', $modules)) {
+  	scraping_home();
+  }
+}
+
+function scraping_menu() {
+	$items = array();
+
+	//creo la ruta donde se ejecuta la funcion para scrapear
+	$items['admin/config/user-interface/scraping'] = array(
+		'title' => 'scraping',
+		'descripcion' => 'scraping',
+		'access callback' => TRUE,
+		'page callback' => 'scraping_home',
+	);
+	//ruta para las secciones
+	$items['seccion/%'] = array(
+		'title' => '',
+		'descripcion' => 'Seccion',
+		'access callback' => TRUE,
+		'page callback' => 'seccion_page',
+	);
+	//ruta para el detalle de los items
+	$items['seccion/item/%'] = array(
+		'title' => '',
+		'descripcion' => 'Seccion',
+		'access callback' => TRUE,
+		'page callback' => 'seccion_page_item',
+	);
+  return $items;
+}
+
+function seccion_page_item(){
+	//obtengo los items y los muestro
+	$seccion=arg(2,drupal_get_path_alias());
+	$url=arg(3,drupal_get_path_alias());
+	$queryitems = "SELECT * FROM seccion_".$seccion."_items where url='".$url."' limit 1";
+	$resultitems = db_query($queryitems);
+
+
+	$salida = "";
+	foreach ($resultitems as $key => $value){
+		$salida.= '<div class="item">';
+			$salida .= '<div class="img"><img src="'.$value->img_src.'" /></div>';
+			$salida.= '<div class="item_datos">';
+				$salida .= '<div class="title">'.$value->titulo.'</div>';
+				$salida .= '<div class="price">'.$value->price.'</div>';
+				$salida .= '<div class="description">'.$value->description.'</div>';
+			$salida.= '</div>';
+		$salida.= '</div>';
+	}
+
+	return $salida;
+}
+
+function seccion_page(){
+	//pagina principal de la seccion
+	$seccion=arg(1,drupal_get_path_alias());
+	
+	$queryitems = "SELECT * FROM seccion_".$seccion."_items";
+	$resultitems = db_query($queryitems);
+
+	$salida = "";
+	$salida .= "<h1>Seccion ". $seccion."</h1>";
+
+	foreach ($resultitems as $key => $value){
+		$salida.= '<div class="item">';
+			$salida.= '<div class="item_datos">';
+				$salida .= '<div class="title"><a href="item/'.$value->category.'/'.$value->url.'">'.$value->titulo.'</a></div>';
+				$salida .= '<div class="description">'.$value->description.'</div>';
+				$salida .= '<div class="price">'.$value->price.'</div>';
+			$salida.= '</div>';
+			$salida .= '<div class="img"><a href="item/'.$value->category.'/'.$value->url.'"><img src="'.$value->img_src.'" /></a></div>';
+		$salida.= '</div>';
+	}
+
+	return $salida;
+}
+
+function scraping_home(){
+	$datos_items = array();
+	//funcion para scrapear las secciones 
+	$table= array(1 => 'motor',2=>'inmobiliaria',3=>'formacion',4=>'mascotas');
+	foreach ($table as $key => $table_value) {
+		$html = drupal_http_request('https://www.milanuncios.com/'.$table_value.'/');
+		$doc = new DOMDocument;
+		$opcionesLibXML = LIBXML_COMPACT | LIBXML_HTML_NODEFDTD;
+		libxml_use_internal_errors(true);
+		@$doc->loadHTML($html->data, $opcionesLibXML);
+		libxml_use_internal_errors(false);
+		$xpath = new DOMXPath($doc);
+
+		$results = $xpath->query("//*[@class='aditem-detail-title']");
+		foreach ($results as $key => $titulo){
+			$datos_items[$key]['category'] = $table_value;
+			$datos_items[$key]['titulo'] = $titulo->nodeValue;
+			$datos_items[$key]['url'] = titletoslugify($titulo->nodeValue);
+			
+		}
+
+		$results = $xpath->query("//*[@class='tx']");
+		foreach ($results as $key => $descripcion) {
+			$datos_items[$key]['description'] = $descripcion->nodeValue;
+		}
+
+		$results = $xpath->query('//img');
+		foreach ($results as $key => $img_src) {
+			$pos = strpos($img_src->getAttribute('src'), 'img.milanuncios.com');
+			if ($pos === false) {
+			} else {
+				$datos_items[$key]['img_src'] = $img_src->getAttribute('src');
+			}
+		}
+
+		$results = $xpath->query("//*[@class='aditem-price']");
+		foreach ($results as $key => $price) {
+			$datos_items[$key]['price'] = $price->nodeValue;
+		}
+
+		insert_items($datos_items,$table_value);
+	}
+	return "Se han actualizado las secciones 'Motor', 'Inmobiliaria', 'Formacion', 'Mascotas'";
+}
+
+
+	function insert_items($valArray, $valcategory) {
+		//inserto los items
+		$sqlfields=array('category','titulo','url','description','img_src','price');
+		foreach ($valArray as $key => $value_item) {
+			$sql= db_insert('seccion_'.$valcategory.'_items')
+				->fields($sqlfields);
+					$sql->values($value_item);
+			$sql->execute();
+		}	
+	}
+
+	function titletoslugify($string){
+		//el titulo lo hago slug para que sea accesible como url
+	    return strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $string), '-'));
+	}

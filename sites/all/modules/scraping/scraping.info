@@ -1,0 +1,5 @@
+name = scraping
+description = scraping
+core = 7.x
+php = 5.3
+version = 1.0
