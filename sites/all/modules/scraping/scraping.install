@@ -3,7 +3,7 @@
     $tablas= array(1 => 'motor',2=>'inmobiliaria',3=>'formacion',4=>'mascotas');
     $schema = array();  
     foreach ( $tablas as $key => $v) {
-      $liga = 'seccion_'.$tablas[$key].'_items';
+      $liga = 'examen_seccion_'.$tablas[$key].'_items';
       $schema[$liga] = array(
       'description' => 'Tablas para almacenar los datos',
       'fields' => array(
@@ -51,7 +51,39 @@
         ),
       ),
       'primary key' => array('id_product'),
-      );
-    } 
+    );
+  }
+
+    $schema['examen_categories'] = array(
+    'description' => t('category'),
+    'fields' => array(
+      'id_category' => array(
+        'description' => 'id_category',
+        'type' => 'serial',
+        'length' => 11,
+        'unsigned' => TRUE,
+        'not null' =>TRUE,
+      ),
+      'category_id' => array(
+        'description' => 'category',
+        'type' => 'varchar',
+        'length' => 150,
+        'default' => NULL
+      ),
+      'name_category' => array(
+        'description' => 'category',
+        'type' => 'varchar',
+        'length' => 150,
+        'default' => NULL
+      ),
+      'titulo' => array(
+        'description' => 'titulo',
+        'type' => 'varchar',
+        'length' => 150,
+        'default' => NULL
+        ),
+      ),
+        'primary key' => array('id_category'),
+  );
     return $schema;
   }

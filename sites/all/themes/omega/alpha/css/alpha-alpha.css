@@ -88,7 +88,7 @@ body.page-seccion-motor #block-system-main .item .item_datos,
 body.page-seccion-inmobiliaria #block-system-main .item .item_datos,
 body.page-seccion-formacion #block-system-main .item .item_datos,
 body.page-seccion-mascotas #block-system-main .item .item_datos{
-  width: 60%;
+  width: 80%;
   display: inline-block;
 }
 
@@ -128,9 +128,10 @@ body.page-seccion-motor #block-system-main .item .img,
 body.page-seccion-inmobiliaria #block-system-main .item .img,
 body.page-seccion-formacion #block-system-main .item .img,
 body.page-seccion-mascotas #block-system-main .item .img{
-  width: 40%;
+  width: 19%;
   display: inline-block;
   vertical-align: top;
+  float: right
 }
 
 
@@ -225,4 +226,23 @@ body.front #block-block-1 .items .formacion {
 
 body.front #block-block-1 .items .mascotas {
   background-color: #E5D700;
+}
+
+#block-scraping-categories-block .content{
+  display: grid;
+  gap: 1.6em;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+
+#block-scraping-categories-block .content .category{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px,1fr));
+}
+
+#block-scraping-categories-block .content .category .titulo{
+  align-items: center;
+  justify-content: center;
+  display: flex;
+  grid-column: 1/-1;
 }

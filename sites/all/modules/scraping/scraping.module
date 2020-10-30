@@ -4,6 +4,7 @@ function scraping_modules_enabled($modules) {
 	//despues de instalar el modulo ejecuto la funcion para insertar datos
   if (in_array('scraping', $modules)) {
   	scraping_home();
+  	scraping_categories();
   }
 }
 
@@ -17,6 +18,15 @@ function scraping_menu() {
 		'access callback' => TRUE,
 		'page callback' => 'scraping_home',
 	);
+
+	//ruta para las categorias
+	$items['admin/config/user-interface/scraping_categories'] = array(
+		'title' => 'scraping',
+		'descripcion' => 'scraping',
+		'access callback' => TRUE,
+		'page callback' => 'scraping_categories',
+	);
+
 	//ruta para las secciones
 	$items['seccion/%'] = array(
 		'title' => '',
@@ -32,6 +42,55 @@ function scraping_menu() {
 		'page callback' => 'seccion_page_item',
 	);
   return $items;
+}
+
+function scraping_block_info() {
+  $blocks['categories_block'] = array(
+    'info' => t('Categories'),
+  );
+  return $blocks;
+}
+
+function scraping_block_view($delta = '') {
+  $block = array();
+  switch ($delta) {
+    case 'categories_block':
+      $block['content'] = showcategories();
+      break;
+  }
+  return $block;
+}
+
+function scraping_categories(){
+	$html = drupal_http_request('https://www.milanuncios.com');
+
+	$doc = new DOMDocument;
+	$opcionesLibXML = LIBXML_COMPACT | LIBXML_HTML_NODEFDTD;
+	libxml_use_internal_errors(true);
+	@$doc->loadHTML($html->data, $opcionesLibXML);
+	libxml_use_internal_errors(false);
+	$xpath = new DOMXPath($doc);
+
+	$results = $xpath->query("//*[@class='ma-CategoriesCategory']");
+	foreach ($results as $key => $titulo){
+		$datatestcategoriescategory = $titulo->getAttribute('data-test-categoriescategory');
+		$arr = $titulo->getElementsByTagName("a");
+		foreach($arr as $item) {
+
+		    $pos = strpos($item->getAttribute("class"), 'ma-MainCategory-mainCategoryNameLink');
+		    if ($pos === false) {
+		    } else {
+		    	$categoryname = ($item->nodeValue);
+		    }
+
+		    $pos = strpos($item->getAttribute("class"), 'ma-SharedCrosslinks');
+		    if ($pos === false) {
+		    } else {
+    	    	insert_categories($item->nodeValue,$datatestcategoriescategory,$categoryname);
+		    }
+		  }
+	}
+	return "Se han actualizado las secciones";
 }
 
 function seccion_page_item(){
@@ -126,6 +185,38 @@ function scraping_home(){
 	return "Se han actualizado las secciones 'Motor', 'Inmobiliaria', 'Formacion', 'Mascotas'";
 }
 
+function scraping_categories(){
+	$html = drupal_http_request('https://www.milanuncios.com');
+
+	$doc = new DOMDocument;
+	$opcionesLibXML = LIBXML_COMPACT | LIBXML_HTML_NODEFDTD;
+	libxml_use_internal_errors(true);
+	@$doc->loadHTML($html->data, $opcionesLibXML);
+	libxml_use_internal_errors(false);
+	$xpath = new DOMXPath($doc);
+
+	$results = $xpath->query("//*[@class='ma-CategoriesCategory']");
+	foreach ($results as $key => $titulo){
+		$datatestcategoriescategory = $titulo->getAttribute('data-test-categoriescategory');
+		$arr = $titulo->getElementsByTagName("a");
+		foreach($arr as $item) {
+
+		    $pos = strpos($item->getAttribute("class"), 'ma-MainCategory-mainCategoryNameLink');
+		    if ($pos === false) {
+		    } else {
+		    	$categoryname = ($item->nodeValue);
+		    }
+
+		    $pos = strpos($item->getAttribute("class"), 'ma-SharedCrosslinks');
+		    if ($pos === false) {
+		    } else {
+    	    	insert_categories($item->nodeValue,$datatestcategoriescategory,$categoryname);
+		    }
+		  }
+	}
+	return "Se han actualizado las secciones";
+}
+
 
 	function insert_items($valArray, $valcategory) {
 		//inserto los items
@@ -136,6 +227,17 @@ function scraping_home(){
 					$sql->values($value_item);
 			$sql->execute();
 		}	
+	}
+
+	function insert_categories($value,$category,$categoryname) {
+		$nid = db_insert('examen_categories') // Table name no longer needs {}
+		->fields(array(
+			'category_id'=>$category,
+			'name_category'=>$categoryname,
+		  	'titulo' => $value,
+		))
+		->execute();
+		
 	}
 
 	function titletoslugify($string){
